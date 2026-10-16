@@ -114,14 +114,14 @@ def judge(reference, hypothesis, lang):
         'Do not explain. Reply immediately with ONLY one line of compact JSON: '
         '{"score": <0-10 integer>, "pass": <true if score>=7>, "issue": "<max 12 words, English>"}'
     )
-    models = [_judge_ok] if _judge_ok else _JUDGE_MODELS
+    models = ([_judge_ok] if _judge_ok else _JUDGE_MODELS[:1]) * 2  # one retry: reasoning models occasionally return empty content
     last = None
     for m in models:
         try:
             r = _post_json("/v1/chat/completions",
                            {"model": m, "messages": [{"role": "user", "content": prompt}],
                             "temperature": 0, "max_tokens": 1500},
-                           {"Authorization": "Bearer " + _key()}, timeout=24)
+                           {"Authorization": "Bearer " + _key()}, timeout=18)
             msg = r["choices"][0]["message"]
             txt = "\n".join(v for v in msg.values() if isinstance(v, str))
             txt = re.sub(r"<think>.*?</think>", "", txt, flags=re.S)

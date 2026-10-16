@@ -123,7 +123,8 @@ function rowHTML(c,r){
   if(r.error) return `<tr><td>${id}</td><td><span class="pill">${c.lang}</span></td><td class="ref">${esc(c.text)}<div class="reg">${esc(r.error)}</div></td><td></td><td></td><td></td></tr>`;
   const b=r.baseline,k=r.candidate;
   const worse=(k.wer??0)>(b.wer??0)+0.001 || (b.judge?.pass && k.judge?.pass===false);
-  const leg=(x,lbl)=>x.error?`<div class="hyp"><b>${lbl}</b> <span class="reg">${esc(x.error)}</span></div>`:`<div class="hyp"><b>${lbl} ${esc(x.model)}:</b> ${esc(x.transcript)} ${x.judge?.issue?`<span class="issue">— ${esc(x.judge.issue)}</span>`:''}</div>`;
+  const iss=j=>{const t=(j?.issue||'').trim();if(!t||/^(none|no issues?\.?|n\/a|-)$/i.test(t))return '';if(j.score==null)return ' <span class="issue">— judge unavailable</span>';return ` <span class="issue">— ${esc(t)}</span>`};
+  const leg=(x,lbl)=>x.error?`<div class="hyp"><b>${lbl}</b> <span class="reg">${esc(x.error)}</span></div>`:`<div class="hyp"><b>${lbl} ${esc(x.model)}:</b> ${esc(x.transcript)}${iss(x.judge)}</div>`;
   return `<tr class="${worse?'worse':''}"><td>${id}</td><td><span class="pill">${c.lang}</span><br><span class="hyp">${c.cat}</span></td>
    <td><div class="ref">${esc(c.text)}</div>${leg(b,'A')}${leg(k,'B')}</td>
    <td class="num">${f3(b.wer)} → <span class="${worse?'reg':''}">${f3(k.wer)}</span></td>
@@ -135,12 +136,12 @@ function renderRows(){ $('rows').innerHTML=SUITE.map(c=>rowHTML(c,RESULTS.find(r
 function renderGate(){
   const thr=parseFloat($('thr').value)||0.05, cats={};
   for(const r of RESULTS){ if(!r||r.error||r.baseline.error||r.candidate.error) continue;
-    const s=cats[r.case.cat]??={n:0,bw:0,cw:0,bp:0,cp:0};
-    s.n++; s.bw+=r.baseline.wer; s.cw+=r.candidate.wer; if(r.baseline.judge?.pass!=null&&r.candidate.judge?.pass!=null){s.bp+=!!r.baseline.judge.pass; s.cp+=!!r.candidate.judge.pass;} }
+    const s=cats[r.case.cat]??={n:0,bw:0,cw:0,bp:0,cp:0,jn:0};
+    s.n++; s.bw+=r.baseline.wer; s.cw+=r.candidate.wer; if(r.baseline.judge?.pass!=null&&r.candidate.judge?.pass!=null){s.jn++; s.bp+=!!r.baseline.judge.pass; s.cp+=!!r.candidate.judge.pass;} }
   let fail=false, html='';
   for(const [cat,s] of Object.entries(cats).sort()){
     const bw=s.bw/s.n,cw=s.cw/s.n,d=cw-bw,reg=d>thr||s.cp<s.bp; fail||=reg;
-    html+=`<tr><td><b>${cat}</b></td><td class="num">${s.n}</td><td class="num">${bw.toFixed(3)}</td><td class="num">${cw.toFixed(3)}</td><td class="num ${d>0?'reg':'okc'}">${d>0?'+':''}${d.toFixed(3)}</td><td class="num">${s.bp}/${s.n}</td><td class="num">${s.cp}/${s.n}</td><td class="${reg?'reg':'okc'}">${reg?'REGRESSION':'ok'}</td></tr>`;
+    html+=`<tr><td><b>${cat}</b></td><td class="num">${s.n}</td><td class="num">${bw.toFixed(3)}</td><td class="num">${cw.toFixed(3)}</td><td class="num ${d>0?'reg':'okc'}">${d>0?'+':''}${d.toFixed(3)}</td><td class="num">${s.jn?s.bp+"/"+s.jn:"—"}</td><td class="num">${s.jn?s.cp+"/"+s.jn:"—"}</td><td class="${reg?'reg':'okc'}">${reg?'REGRESSION':'ok'}</td></tr>`;
   }
   $('cats').innerHTML=html||'<tr><td colspan="8" class="hyp">No results yet.</td></tr>';
   const v=$('verdict'); if(!html) return;
