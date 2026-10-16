@@ -111,7 +111,8 @@ def judge(reference, hypothesis, lang):
         "(e.g. '10:30' == 'साढ़े दस' == 'ten thirty'). Penalise wrong numbers, names, amounts, dropped or "
         "changed meaning.\n"
         f"Language: {lang}\nREFERENCE: {reference}\nTRANSCRIPT: {hypothesis}\n\n"
-        'Reply with ONLY compact JSON: {"score": <0-10 integer>, "pass": <true if score>=7>, "issue": "<max 12 words>"}'
+        'Do not explain. Reply immediately with ONLY one line of compact JSON: '
+        '{"score": <0-10 integer>, "pass": <true if score>=7>, "issue": "<max 12 words, English>"}'
     )
     models = [_judge_ok] if _judge_ok else _JUDGE_MODELS
     last = None
@@ -122,7 +123,7 @@ def judge(reference, hypothesis, lang):
                             "temperature": 0, "max_tokens": 1500},
                            {"Authorization": "Bearer " + _key()}, timeout=24)
             msg = r["choices"][0]["message"]
-            txt = (msg.get("content") or "") + "\n" + (msg.get("reasoning_content") or "")
+            txt = "\n".join(v for v in msg.values() if isinstance(v, str))
             txt = re.sub(r"<think>.*?</think>", "", txt, flags=re.S)
             found = re.findall(r"\{[^{}]*\"score\"[^{}]*\}", txt, flags=re.S)
             if not found:
