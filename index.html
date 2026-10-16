@@ -136,7 +136,7 @@ function renderGate(){
   const thr=parseFloat($('thr').value)||0.05, cats={};
   for(const r of RESULTS){ if(!r||r.error||r.baseline.error||r.candidate.error) continue;
     const s=cats[r.case.cat]??={n:0,bw:0,cw:0,bp:0,cp:0};
-    s.n++; s.bw+=r.baseline.wer; s.cw+=r.candidate.wer; s.bp+=!!r.baseline.judge?.pass; s.cp+=!!r.candidate.judge?.pass; }
+    s.n++; s.bw+=r.baseline.wer; s.cw+=r.candidate.wer; if(r.baseline.judge?.pass!=null&&r.candidate.judge?.pass!=null){s.bp+=!!r.baseline.judge.pass; s.cp+=!!r.candidate.judge.pass;} }
   let fail=false, html='';
   for(const [cat,s] of Object.entries(cats).sort()){
     const bw=s.bw/s.n,cw=s.cw/s.n,d=cw-bw,reg=d>thr||s.cp<s.bp; fail||=reg;

@@ -98,7 +98,7 @@ def stt(wav_bytes, lang, model):
     return r.get("transcript", ""), round(time.time() - t, 2)
 
 
-_JUDGE_MODELS = [m for m in [os.environ.get("JUDGE_MODEL"), "sarvam-m", "sarvam-105b"] if m]
+_JUDGE_MODELS = [m for m in [os.environ.get("JUDGE_MODEL"), "sarvam-105b", "sarvam-m"] if m]
 _judge_ok = None
 
 
@@ -119,8 +119,8 @@ def judge(reference, hypothesis, lang):
         try:
             r = _post_json("/v1/chat/completions",
                            {"model": m, "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0, "max_tokens": 700},
-                           {"Authorization": "Bearer " + _key()}, timeout=20)
+                            "temperature": 0, "max_tokens": 1500},
+                           {"Authorization": "Bearer " + _key()}, timeout=24)
             msg = r["choices"][0]["message"]
             txt = (msg.get("content") or "") + "\n" + (msg.get("reasoning_content") or "")
             txt = re.sub(r"<think>.*?</think>", "", txt, flags=re.S)

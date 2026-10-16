@@ -44,8 +44,10 @@ def gate(results, threshold):
         s["n"] += 1
         s["b_wer"].append(r["baseline"]["wer"])
         s["c_wer"].append(r["candidate"]["wer"])
-        s["b_pass"] += bool(r["baseline"]["judge"].get("pass"))
-        s["c_pass"] += bool(r["candidate"]["judge"].get("pass"))
+        bj, cj = r["baseline"]["judge"].get("pass"), r["candidate"]["judge"].get("pass")
+        if bj is not None and cj is not None:  # judge errors never count as regressions
+            s["b_pass"] += bool(bj)
+            s["c_pass"] += bool(cj)
     rows, failed = [], False
     for cat, s in sorted(by_cat.items()):
         bw = sum(s["b_wer"]) / s["n"]
