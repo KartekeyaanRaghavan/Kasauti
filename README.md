@@ -17,7 +17,7 @@ text ─► Bulbul TTS ─► + noise @ SNR (fixed seed) ─┬─► Saaras bas
 - **Meaning, not just WER.** A Sarvam LLM judge scores whether the transcript preserved meaning (`₹2,450` vs `2450 rupees` is fine; a wrong digit is not).
 - **CI-ready.** `harness.py` exits 1 on regression; `.github/workflows/kasauti.yml` runs it on every PR.
 
-Sarvam models used: **Bulbul** (TTS), **Saaras v3 / v4** (STT), **Sarvam LLM** (judge, `sarvam-105b` with `sarvam-m` fallback).
+Sarvam models used: **Bulbul** (TTS), **Saaras v3 / v4** (STT), **Sarvam LLM** (judge, `sarvam-m` with `sarvam-105b` fallback).
 
 ## Run
 
