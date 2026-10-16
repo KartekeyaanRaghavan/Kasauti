@@ -30,14 +30,14 @@ API = "https://api.sarvam.ai"
 
 # ---------------------------------------------------------------- test suite
 SUITE = [
-    {"id": 1, "lang": "hi-IN", "cat": "code-mix", "text": "Kal subah 10:30 baje meeting hai, please confirm kar dena."},
-    {"id": 2, "lang": "hi-IN", "cat": "numbers", "text": "Aapka bill ₹2,450 hai aur due date 15 November hai."},
+    {"id": 1, "lang": "hi-IN", "cat": "code-mix", "text": "कल सुबह 10:30 बजे मीटिंग है, प्लीज़ कन्फर्म कर देना।"},
+    {"id": 2, "lang": "hi-IN", "cat": "numbers", "text": "आपका बिल ₹2,450 है और ड्यू डेट 15 नवंबर है।"},
     {"id": 3, "lang": "en-IN", "cat": "entities", "text": "Please book a cab from Gachibowli to Kempegowda International Airport."},
     {"id": 4, "lang": "hi-IN", "cat": "native", "text": "मेरे खाते से पाँच हज़ार रुपये कट गए हैं लेकिन रिचार्ज नहीं हुआ।"},
     {"id": 5, "lang": "ta-IN", "cat": "native", "text": "நாளை காலை ஒன்பது மணிக்கு மருத்துவரை சந்திக்க வேண்டும்."},
     {"id": 6, "lang": "te-IN", "cat": "native", "text": "నా ఆర్డర్ ఇంకా డెలివరీ కాలేదు, దయచేసి చెక్ చేయండి."},
     {"id": 7, "lang": "en-IN", "cat": "numbers", "text": "My OTP is 4 8 2 9 1 7 and my account number ends in 3305."},
-    {"id": 8, "lang": "hi-IN", "cat": "code-mix", "text": "Mera UPI payment fail ho gaya, transaction ID check karo."},
+    {"id": 8, "lang": "hi-IN", "cat": "code-mix", "text": "मेरा UPI पेमेंट फेल हो गया, ट्रांजैक्शन ID चेक करो।"},
     {"id": 9, "lang": "bn-IN", "cat": "native", "text": "আমি কাল কলকাতা থেকে দিল্লি যাচ্ছি।"},
     {"id": 10, "lang": "mr-IN", "cat": "native", "text": "माझी ट्रेन पुणे स्टेशनवरून सहा वाजता सुटते."},
     {"id": 11, "lang": "kn-IN", "cat": "code-mix", "text": "ನನಗೆ ಬೆಂಗಳೂರಿನಲ್ಲಿ ಒಂದು 2BHK flat ಬೇಕು."},
@@ -119,17 +119,20 @@ def judge(reference, hypothesis, lang):
         try:
             r = _post_json("/v1/chat/completions",
                            {"model": m, "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0, "max_tokens": 400},
+                            "temperature": 0, "max_tokens": 2000},
                            {"Authorization": "Bearer " + _key()})
-            txt = r["choices"][0]["message"].get("content") or ""
+            msg = r["choices"][0]["message"]
+            txt = (msg.get("content") or "") + "\n" + (msg.get("reasoning_content") or "")
             txt = re.sub(r"<think>.*?</think>", "", txt, flags=re.S)
-            mm = re.search(r"\{.*\}", txt, flags=re.S)
-            data = json.loads(mm.group(0)) if mm else {}
-            _judge_ok = m
+            found = re.findall(r"\{[^{}]*\"score\"[^{}]*\}", txt, flags=re.S)
+            if not found:
+                raise ValueError("no JSON verdict in reply: " + txt.strip()[:80])
+            data = json.loads(found[0])
             score = int(float(data.get("score", 0)))
             pv = data.get("pass", score >= 7)
             if isinstance(pv, str):
                 pv = pv.strip().lower() in ("true", "yes", "1")
+            _judge_ok = m
             return {"score": score, "pass": bool(pv),
                     "issue": str(data.get("issue", ""))[:120], "model": m}
         except Exception as e:  # try next model
@@ -165,7 +168,7 @@ def add_noise(wav_bytes, snr_db, seed=7):
 
 
 def _norm(t):
-    t = unicodedata.normalize("NFC", t.lower())
+    t = unicodedata.normalize("NFC", t.lower()).replace("\u093c", "")
     t = "".join(" " if unicodedata.category(c)[0] in "PS" else c for c in t)
     return t.split()
 
