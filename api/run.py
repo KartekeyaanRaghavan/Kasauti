@@ -126,8 +126,11 @@ def judge(reference, hypothesis, lang):
             mm = re.search(r"\{.*\}", txt, flags=re.S)
             data = json.loads(mm.group(0)) if mm else {}
             _judge_ok = m
-            score = int(data.get("score", 0))
-            return {"score": score, "pass": bool(data.get("pass", score >= 7)),
+            score = int(float(data.get("score", 0)))
+            pv = data.get("pass", score >= 7)
+            if isinstance(pv, str):
+                pv = pv.strip().lower() in ("true", "yes", "1")
+            return {"score": score, "pass": bool(pv),
                     "issue": str(data.get("issue", ""))[:120], "model": m}
         except Exception as e:  # try next model
             last = str(e)
@@ -139,10 +142,13 @@ def add_noise(wav_bytes, snr_db, seed=7):
     """Mix white noise at a target SNR (dB). Same seed => identical audio for every model."""
     if snr_db is None:
         return wav_bytes
-    with wave.open(io.BytesIO(wav_bytes)) as w:
-        params = w.getparams()
-        frames = w.readframes(w.getnframes())
-    if params.sampwidth != 2:
+    try:
+        with wave.open(io.BytesIO(wav_bytes)) as w:
+            params = w.getparams()
+            frames = w.readframes(w.getnframes())
+    except Exception:
+        return wav_bytes  # unknown container: test on clean audio rather than fail
+    if params.sampwidth != 2 or not frames:
         return wav_bytes
     n = len(frames) // 2
     s = struct.unpack(f"<{n}h", frames)
