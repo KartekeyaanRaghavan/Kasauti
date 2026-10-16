@@ -15,7 +15,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,"Noto Sa
 header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:16px}
 h1{margin:0;font-size:34px;letter-spacing:-.02em}
 h1 span{color:var(--accent);font-weight:500}
-.tag{color:var(--mute);max-width:640px;margin:6px 0 0}
+.lead{font-size:20px;font-weight:600;margin:6px 0 0}
+.tag{color:var(--mute);max-width:760px;margin:6px 0 0}
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.steps span{font-size:12.5px;padding:4px 10px;border:1px solid var(--line);border-radius:99px;background:var(--panel)}
+.steps b{color:var(--accent);margin-right:4px}
 .pipeline{font:12px "JetBrains Mono",monospace;color:var(--mute);margin-top:6px}
 .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0;align-items:end}
 label{font-size:12px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px}
@@ -58,8 +62,9 @@ h2{font-size:18px;margin:28px 0 8px}
 <header>
   <div>
     <h1>Kasauti <span>कसौटी</span></h1>
-    <p class="tag">A regression gate for Indic speech models. Swap a model, change inference or the API layer: Kasauti replays the same hard, real-world audio through the old and new stack and blocks the release if anything got worse.</p>
-    <div class="pipeline">text → Bulbul TTS → +noise @ SNR → Saaras STT (baseline ‖ candidate, same audio) → WER · CER · Sarvam LLM judge → gate</div>
+    <p class="lead">Catch speech-model regressions before your users do.</p>
+    <p class="tag">Every new model version, inference change or API update is replayed against the same hard, real-world Indian audio: Hinglish code-mix, OTPs, rupee amounts, names, 6 languages, street noise. Old model vs new model, same audio, side by side. If anything gets worse, the release is blocked.</p>
+    <div class="steps"><span><b>1</b> Generate test speech · Bulbul</span><span><b>2</b> Add real-world noise</span><span><b>3</b> Transcribe old ‖ new · Saaras</span><span><b>4</b> Score · WER + Sarvam LLM judge</span><span><b>5</b> PASS / FAIL gate</span></div>
   </div>
 </header>
 
@@ -93,6 +98,7 @@ h2{font-size:18px;margin:28px 0 8px}
     <select id="clang"><option>hi-IN</option><option>en-IN</option><option>ta-IN</option><option>te-IN</option><option>bn-IN</option><option>kn-IN</option><option>mr-IN</option><option>ml-IN</option><option>gu-IN</option><option>pa-IN</option><option>od-IN</option></select>
     <button id="cgo" class="ghost" style="padding:9px 14px">Test it</button>
   </div>
+  <p class="hyp" style="margin:8px 0 0">Tip: write Indic text in its native script (हिंदी, தமிழ்…). Saaras transcribes in native script, so Roman-script Hinglish makes WER meaningless; the LLM judge still scores meaning.</p>
   <div class="tablewrap"><table class="cases"><tbody id="crow"></tbody></table></div>
 </div>
 
