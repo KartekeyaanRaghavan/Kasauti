@@ -47,7 +47,7 @@ SUITE = [
 
 # ---------------------------------------------------------------- HTTP helpers
 def _key():
-    k = os.environ.get("SARVAM_API_KEY", "").strip()
+    k = (os.environ.get("SARVAM_API_KEY") or os.environ.get("Sarvam_API_key") or "").strip()
     if not k:
         raise RuntimeError("SARVAM_API_KEY is not set")
     return k
