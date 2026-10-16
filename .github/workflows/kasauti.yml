@@ -1,0 +1,19 @@
+# Block a release if a speech-model change (weights, inference config, API layer) regresses quality.
+name: kasauti-speech-regression
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Run Kasauti suite (baseline vs candidate, same noisy audio)
+        env:
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+        run: python harness.py --local --base saaras:v3 --cand saaras:v4 --snr 10 --threshold 0.05
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: kasauti-report, path: kasauti_report.json }

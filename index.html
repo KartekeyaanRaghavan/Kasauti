@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kasauti — Speech Regression Gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Sans+Bengali&family=Noto+Sans+Kannada&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f4ef;--panel:#fff;--ink:#1d1b16;--mute:#6f6a5e;--line:#e4dfd3;--accent:#b4541a;--ok:#1f7a4d;--okbg:#e6f4ec;--bad:#b42318;--badbg:#fdecea;--warnbg:#fff6e0}
+@media (prefers-color-scheme:dark){:root{--bg:#14130f;--panel:#1d1b16;--ink:#f1ede4;--mute:#a39d8f;--line:#33302a;--accent:#e58a4a;--ok:#5bc58c;--okbg:#16301f;--bad:#ff7b6e;--badbg:#3a1714;--warnbg:#3a2f12}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,"Noto Sans Devanagari","Noto Sans Tamil","Noto Sans Telugu","Noto Sans Bengali","Noto Sans Kannada",system-ui,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:28px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:16px}
+h1{margin:0;font-size:34px;letter-spacing:-.02em}
+h1 span{color:var(--accent);font-weight:500}
+.tag{color:var(--mute);max-width:640px;margin:6px 0 0}
+.pipeline{font:12px "JetBrains Mono",monospace;color:var(--mute);margin-top:6px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0;align-items:end}
+label{font-size:12px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px}
+select,input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}
+button{padding:10px 16px;border:0;border-radius:8px;background:var(--ink);color:var(--bg);font:600 15px Inter,sans-serif;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);padding:6px 10px;font-size:13px}
+.gate{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:760px){.gate{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.verdict{display:flex;flex-direction:column;justify-content:center;text-align:center}
+.verdict .big{font:700 44px Inter;letter-spacing:-.02em}
+.verdict.pass{background:var(--okbg);border-color:var(--ok)}.verdict.pass .big{color:var(--ok)}
+.verdict.fail{background:var(--badbg);border-color:var(--bad)}.verdict.fail .big{color:var(--bad)}
+.verdict .sub{color:var(--mute);font-size:13px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+td.num{font:13px "JetBrains Mono",monospace;white-space:nowrap}
+.reg{color:var(--bad);font-weight:700}.okc{color:var(--ok);font-weight:600}
+.tablewrap{overflow-x:auto}
+.cases td{font-size:14px}
+.ref{font-weight:500}
+.hyp{color:var(--mute);font-size:13px}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font:600 11px "JetBrains Mono",monospace;background:var(--line);color:var(--ink)}
+.j{display:inline-block;min-width:34px;text-align:center;padding:1px 6px;border-radius:6px;font:600 12px "JetBrains Mono",monospace}
+.j.p{background:var(--okbg);color:var(--ok)}.j.f{background:var(--badbg);color:var(--bad)}
+tr.worse{background:var(--badbg)}
+.issue{font-size:12px;color:var(--mute);font-style:italic}
+.status{font:13px "JetBrains Mono",monospace;color:var(--mute);margin:6px 0 14px}
+.custom{display:grid;grid-template-columns:1fr 140px auto;gap:10px;margin-top:10px}
+@media(max-width:640px){.custom{grid-template-columns:1fr}}
+pre{background:var(--ink);color:var(--bg);padding:14px;border-radius:10px;overflow-x:auto;font:12.5px/1.5 "JetBrains Mono",monospace}
+h2{font-size:18px;margin:28px 0 8px}
+.foot{color:var(--mute);font-size:13px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Kasauti <span>कसौटी</span></h1>
+    <p class="tag">A regression gate for Indic speech models. Swap a model, change inference or the API layer: Kasauti replays the same hard, real-world audio through the old and new stack and blocks the release if anything got worse.</p>
+    <div class="pipeline">text → Bulbul TTS → +noise @ SNR → Saaras STT (baseline ‖ candidate, same audio) → WER · CER · Sarvam LLM judge → gate</div>
+  </div>
+</header>
+
+<div class="controls">
+  <div><label>Baseline STT</label><select id="base"><option>saaras:v3</option><option>saaras:v4</option></select></div>
+  <div><label>Candidate STT</label><select id="cand"><option>saaras:v4</option><option>saaras:v3</option></select></div>
+  <div><label>Test-audio TTS</label><select id="tts"><option>bulbul:v3</option><option>bulbul:v4-flash</option><option>bulbul:v2</option></select></div>
+  <div><label>Noise (SNR)</label><select id="snr"><option value="clean">clean</option><option value="15">15 dB (office)</option><option value="10" selected>10 dB (street)</option><option value="5">5 dB (crowded bus)</option></select></div>
+  <div><label>WER threshold</label><input id="thr" type="number" step="0.01" value="0.05"></div>
+  <div><button id="go">Run regression suite</button></div>
+</div>
+<div class="status" id="status">12 test cases · 6 languages · code-mix, numbers, named entities, native script</div>
+
+<div class="gate">
+  <div class="card verdict" id="verdict"><div class="big">—</div><div class="sub">run the suite to get a verdict</div></div>
+  <div class="card tablewrap">
+    <table><thead><tr><th>Category</th><th>n</th><th>WER base</th><th>WER cand</th><th>Δ</th><th>Judge base</th><th>Judge cand</th><th>Verdict</th></tr></thead>
+    <tbody id="cats"><tr><td colspan="8" class="hyp">No results yet.</td></tr></tbody></table>
+  </div>
+</div>
+
+<div class="card tablewrap">
+  <table class="cases"><thead><tr><th>#</th><th>Lang · cat</th><th>Spoken reference / transcripts</th><th>WER b → c</th><th>Judge b → c</th><th>Audio</th></tr></thead>
+  <tbody id="rows"></tbody></table>
+</div>
+
+<h2>Try your own sentence</h2>
+<div class="card">
+  <div class="custom">
+    <input id="ctext" value="Mujhe 3 baje Hyderabad se Chennai ki flight book karni hai, 2 adults.">
+    <select id="clang"><option>hi-IN</option><option>en-IN</option><option>ta-IN</option><option>te-IN</option><option>bn-IN</option><option>kn-IN</option><option>mr-IN</option><option>ml-IN</option><option>gu-IN</option><option>pa-IN</option><option>od-IN</option></select>
+    <button id="cgo" class="ghost" style="padding:9px 14px">Test it</button>
+  </div>
+  <div class="tablewrap"><table class="cases"><tbody id="crow"></tbody></table></div>
+</div>
+
+<h2>Put it in CI</h2>
+<pre># .github/workflows/kasauti.yml  — runs on every PR, exits 1 on regression
+python harness.py --local --base saaras:v3 --cand saaras:v4 --snr 10 --threshold 0.05
+# or against this deployment:
+python harness.py --url https://&lt;this-site&gt; --snr 10
+# prints the same per-category table as above, writes kasauti_report.json,
+# exit 0 = PASS, exit 1 = FAIL (release blocked)</pre>
+<p class="foot">Why same-audio A/B: both models hear byte-identical noisy audio (fixed seed), so a delta is the model, not the input. Why an LLM judge: WER says “₹2,450” ≠ “2450 rupees”; the judge scores meaning and flags wrong numbers, names and amounts. Built on Sarvam Bulbul, Saaras and Sarvam LLM.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let SUITE=[], RESULTS=[];
+const esc=s=>(s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f3=x=>x==null?"—":x.toFixed(3);
+const jcell=j=>!j||j.score==null?'<span class="j">?</span>':`<span class="j ${j.pass?'p':'f'}">${j.score}</span>`;
+
+async function loadSuite(){
+  try{const r=await fetch('/api/run?suite=1');SUITE=(await r.json()).suite;renderRows();}
+  catch(e){$('status').textContent='Could not load suite: '+e;}
+}
+function rowHTML(c,r){
+  const id=c.id||'★';
+  if(!r) return `<tr><td>${id}</td><td><span class="pill">${c.lang}</span><br><span class="hyp">${c.cat}</span></td><td class="ref">${esc(c.text)}</td><td class="num">…</td><td></td><td></td></tr>`;
+  if(r.error) return `<tr><td>${id}</td><td><span class="pill">${c.lang}</span></td><td class="ref">${esc(c.text)}<div class="reg">${esc(r.error)}</div></td><td></td><td></td><td></td></tr>`;
+  const b=r.baseline,k=r.candidate;
+  const worse=(k.wer??0)>(b.wer??0)+0.001 || (b.judge?.pass && k.judge?.pass===false);
+  const leg=(x,lbl)=>x.error?`<div class="hyp"><b>${lbl}</b> <span class="reg">${esc(x.error)}</span></div>`:`<div class="hyp"><b>${lbl} ${esc(x.model)}:</b> ${esc(x.transcript)} ${x.judge?.issue?`<span class="issue">— ${esc(x.judge.issue)}</span>`:''}</div>`;
+  return `<tr class="${worse?'worse':''}"><td>${id}</td><td><span class="pill">${c.lang}</span><br><span class="hyp">${c.cat}</span></td>
+   <td><div class="ref">${esc(c.text)}</div>${leg(b,'A')}${leg(k,'B')}</td>
+   <td class="num">${f3(b.wer)} → <span class="${worse?'reg':''}">${f3(k.wer)}</span></td>
+   <td class="num">${jcell(b.judge)} → ${jcell(k.judge)}</td>
+   <td>${r.audio_b64?`<audio controls preload="none" style="width:150px" src="data:audio/wav;base64,${r.audio_b64}"></audio>`:''}</td></tr>`;
+}
+function renderRows(){ $('rows').innerHTML=SUITE.map(c=>rowHTML(c,RESULTS.find(r=>r&&r.case&&r.case.id===c.id))).join(''); }
+
+function renderGate(){
+  const thr=parseFloat($('thr').value)||0.05, cats={};
+  for(const r of RESULTS){ if(!r||r.error||r.baseline.error||r.candidate.error) continue;
+    const s=cats[r.case.cat]??={n:0,bw:0,cw:0,bp:0,cp:0};
+    s.n++; s.bw+=r.baseline.wer; s.cw+=r.candidate.wer; s.bp+=!!r.baseline.judge?.pass; s.cp+=!!r.candidate.judge?.pass; }
+  let fail=false, html='';
+  for(const [cat,s] of Object.entries(cats).sort()){
+    const bw=s.bw/s.n,cw=s.cw/s.n,d=cw-bw,reg=d>thr||s.cp<s.bp; fail||=reg;
+    html+=`<tr><td><b>${cat}</b></td><td class="num">${s.n}</td><td class="num">${bw.toFixed(3)}</td><td class="num">${cw.toFixed(3)}</td><td class="num ${d>0?'reg':'okc'}">${d>0?'+':''}${d.toFixed(3)}</td><td class="num">${s.bp}/${s.n}</td><td class="num">${s.cp}/${s.n}</td><td class="${reg?'reg':'okc'}">${reg?'REGRESSION':'ok'}</td></tr>`;
+  }
+  $('cats').innerHTML=html||'<tr><td colspan="8" class="hyp">No results yet.</td></tr>';
+  const v=$('verdict'); if(!html) return;
+  v.className='card verdict '+(fail?'fail':'pass');
+  v.innerHTML=`<div class="big">${fail?'FAIL':'PASS'}</div><div class="sub">${$('cand').value} vs ${$('base').value}<br>${fail?'release blocked — candidate regressed':'no category regressed beyond '+thr}</div>`;
+}
+
+async function runOne(c){
+  const q=new URLSearchParams({id:c.id,tts:$('tts').value,base:$('base').value,cand:$('cand').value,snr:$('snr').value});
+  try{const r=await fetch('/api/run?'+q);return await r.json();}catch(e){return {case:c,error:String(e)};}
+}
+$('go').onclick=async()=>{
+  if(!SUITE.length) await loadSuite();
+  $('go').disabled=true; RESULTS=[]; renderRows(); renderGate();
+  $('verdict').className='card verdict'; $('verdict').innerHTML='<div class="big">…</div><div class="sub">running</div>';
+  let done=0; const t0=Date.now(), queue=[...SUITE];
+  const worker=async()=>{ while(queue.length){ const c=queue.shift(); const r=await runOne(c); if(!r.case) r.case=c;
+    RESULTS.push(r); done++; $('status').textContent=`${done}/${SUITE.length} cases · ${((Date.now()-t0)/1000).toFixed(1)}s`; renderRows(); renderGate(); } };
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  $('go').disabled=false;
+};
+$('cgo').onclick=async()=>{
+  const c={id:0,lang:$('clang').value,cat:'custom',text:$('ctext').value};
+  $('crow').innerHTML=rowHTML(c,null); $('cgo').disabled=true;
+  const q=new URLSearchParams({text:c.text,lang:c.lang,tts:$('tts').value,base:$('base').value,cand:$('cand').value,snr:$('snr').value});
+  try{const r=await (await fetch('/api/run?'+q)).json(); $('crow').innerHTML=rowHTML(c,r);}catch(e){$('crow').innerHTML=rowHTML(c,{error:String(e)});}
+  $('cgo').disabled=false;
+};
+$('thr').oninput=renderGate;
+loadSuite();
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+{
+  "functions": { "api/run.py": { "maxDuration": 60 } }
+}
